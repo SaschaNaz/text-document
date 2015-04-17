@@ -225,24 +225,23 @@ class TextDocument
   ###
 
   undo: ->
-    {changes, metadata: markerSnapshot} = @history.popUndoStack(@currentMarkerSnapshot)
+    {changes, metadata: markerSnapshot} = @history.popUndoStack(@markerStore.createSnapshot())
     @applyChange(change, true) for change in changes
-    @updateMarkers(@currentMarkerSnapshot, markerSnapshot)
-    @currentMarkerSnapshot = markerSnapshot
+    @markerStore.restoreFromSnapshot(markerSnapshot) if markerSnapshot
+    @emitter.emit("did-update-markers")
 
   redo: ->
     {changes, metadata: markerSnapshot} = @history.popRedoStack()
     @applyChange(change, true) for change in changes
-    @updateMarkers(@currentMarkerSnapshot, markerSnapshot)
-    @currentMarkerSnapshot = markerSnapshot
+    @markerStore.restoreFromSnapshot(markerSnapshot) if markerSnapshot
+    @emitter.emit("did-update-markers")
 
   transact: (groupingInterval, fn) ->
     if typeof groupingInterval is 'function'
       fn = groupingInterval
       groupingInterval = 0
 
-    oldMarkerSnapshot = @currentMarkerSnapshot ?= @markerStore.createSnapshot()
-    checkpoint = @history.createCheckpoint(@currentMarkerSnapshot)
+    checkpoint = @history.createCheckpoint(@markerStore.createSnapshot())
 
     try
       @transactCallDepth++
@@ -256,8 +255,9 @@ class TextDocument
 
     @history.groupChangesSinceCheckpoint(checkpoint)
     @history.applyCheckpointGroupingInterval(checkpoint, groupingInterval)
-    @currentMarkerSnapshot = @markerStore.createSnapshot()
-    @updateMarkers(oldMarkerSnapshot, @currentMarkerSnapshot, false)
+
+    @markerStore.emitChangeEvents()
+    @emitter.emit("did-update-markers")
     result
 
   abortTransaction: ->
@@ -279,10 +279,6 @@ class TextDocument
   ###
   Section: Private
   ###
-
-  updateMarkers: (oldSnapshot, newSnapshot, updateRanges=true) ->
-    @markerStore.updateMarkers(oldSnapshot, newSnapshot, updateRanges)
-    @emitter.emit("did-update-markers")
 
   markerCreated: (marker) ->
     @emitter.emit("did-create-marker", marker)
