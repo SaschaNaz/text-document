@@ -790,7 +790,7 @@ describe "TextDocument", ->
             expect(marker.isValid()).toBe true
 
       describe "when a change starts and ends at a marker's start position", ->
-        xit "interprets the change as being inside the marker for all invalidation strategies except 'inside'", ->
+        it "interprets the change as being inside the marker for all invalidation strategies except 'inside'", ->
           document.insert([0, 6], "ABC")
 
           for marker in difference(allStrategies, [insideMarker, touchMarker])
@@ -811,7 +811,7 @@ describe "TextDocument", ->
 
       describe "when a change starts at a marker's end position", ->
         describe "when the change is an insertion", ->
-          xit "interprets the change as being inside the marker for all invalidation strategies except 'inside'", ->
+          it "interprets the change as being inside the marker for all invalidation strategies except 'inside'", ->
             document.setTextInRange([[0, 9], [0, 9]], "ABC")
 
             for marker in difference(allStrategies, [insideMarker, touchMarker])
